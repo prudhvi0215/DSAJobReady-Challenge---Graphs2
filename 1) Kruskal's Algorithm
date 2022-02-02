@@ -1,0 +1,194 @@
+// Online C++ compiler to run C++ program online
+#include <bits/stdc++.h>
+
+using namespace std;
+
+
+bool isCycleDetectHelper(vector<vector<int>> &MST,int v,int sv,int pv,vector<bool> &visited)
+{
+    visited[sv] = true;
+    
+    for(int i=0;i<v;i++)
+    {
+        if(i==sv){
+            continue;
+        }
+        
+        if(MST[sv][i]!=0 && !visited[i])
+        {
+            if(pv!=-1){
+                if(MST[pv][i]!=0){
+                    return true;
+                }
+            }
+            
+            return isCycleDetectHelper(MST,v,i,sv,visited);
+        }
+    }
+    
+    return false;
+}
+
+bool isCyclePresent(vector<vector<int>> &MST,int v)
+{
+    vector<bool> visited(v,false);
+    
+    bool foundCycle = false;
+    
+    for(int i=0;i<v;i++)
+    {
+        if(!visited[i]){
+            bool isFound = isCycleDetectHelper(MST,v,i,-1,visited);    
+            if(isFound){
+                foundCycle = true;
+                break;
+            }
+        }
+    }
+    return foundCycle;
+}
+
+
+void createMSTHelper(vector<vector<int>> &graph,int v,int e,priority_queue<int,vector<int>,greater<int>> &pq,unordered_map<int,queue<int>> &mpp,vector<vector<int>> &MST)
+{
+    int vertex = 1;
+    while(vertex < v)
+    {
+        int top = pq.top();
+        pq.pop();
+        
+        queue<int> *vertexQ = &mpp[top];
+        if(vertexQ->size()>=2)
+        {
+            int vertex1 = vertexQ->front();
+            vertexQ->pop();
+            int vertex2 = vertexQ->front();
+            vertexQ->pop();
+            
+            //cout<<vertex1<<" "<<vertex2<<"\n";
+            
+            MST[vertex1][vertex2] = top;
+            MST[vertex2][vertex1] = top;
+            
+            if(isCyclePresent(MST,v))
+            {
+                MST[vertex1][vertex2] = 0;
+                MST[vertex2][vertex1] = 0;
+            }
+        }
+        vertex++;
+    }
+}
+
+
+void createMST(vector<vector<int>> &graph,int v,int e)
+{
+    priority_queue<int,vector<int>,greater<int>> pq;
+    unordered_map<int,queue<int>> mpp;
+    
+    vector<vector<int>> MST(v,vector<int>(v,0));
+    
+    vector<vector<bool>> visited(v,vector<bool>(v,false));
+    
+    for(int i=0;i<v;i++)
+    {
+        for(int j=0;j<v;j++)
+        {
+            if(i==j){
+                continue;
+            }
+            
+            if(graph[i][j]!=0 && !visited[i][j]){
+                int mini = min(i,j);
+                int maxi = max(i,j);
+    
+                
+                mpp[graph[i][j]].push(mini);
+                mpp[graph[i][j]].push(maxi);
+                
+                pq.push(graph[i][j]);
+                
+                visited[i][j] = true;
+                visited[j][i] = true;
+            }
+        }
+    }
+    
+    createMSTHelper(graph,v,e,pq,mpp,MST);
+    
+    //Answer
+    
+    
+    // unordered_map<int,queue<int>>::iterator itr;
+    
+    // for(itr= mpp.begin();itr!=mpp.end();itr++)
+    // {
+    //     int key = itr->first;
+    //     queue<int> Q = itr->second;
+        
+    //     cout<<key<<": "<<"\n";
+    //     while(!Q.empty())
+    //     {
+    //         cout<<Q.front()<<" ";
+    //         Q.pop();
+    //     }
+    //     cout<<"\n";
+    // }
+    
+    vector<vector<bool>> visitedAns(v,vector<bool>(v,false));
+    
+    for(int i=0;i<v;i++)
+    {
+        for(int j=0;j<v;j++)
+        {
+            if(MST[i][j]!=0 && !visitedAns[i][j]){
+                cout<<min(i,j)<<" "<<max(i,j)<<" "<<MST[i][j]<<"\n";
+                visitedAns[i][j] = true;
+                visitedAns[j][i] = true;
+            }
+        }
+    }
+    return;
+}
+
+
+// Learning: 
+
+// My Approach for the kruskals algorithm : 
+// I was taking the input into the graph matrix and using min heap and hashmap
+//        (BUT)
+// the optimal approach to kruskals is not to store it in the graph matrix
+// anymore, Instead use the class named EDGE to store just the two vertices 
+// and there weights as below:
+// class Edge
+// {
+//     public:
+//     int source;
+//     int destination;
+//     int weight;
+// };
+// and use union find algorithm which not only simplifies the code but also
+// reduces the complexity.
+
+
+int main() {
+    // Write C++ code here
+    int v,e;
+    cout<<"Enter Vertices & Edges: "<<"\n";
+    
+    cin>>v>>e;
+    
+    vector<vector<int>> graph(v,vector<int>(v,false));
+    
+    for(int i=0;i<e;i++)
+    {
+        int fv,sv,weight;
+        cin>>fv>>sv>>weight;
+        graph[fv][sv] = weight;
+        graph[sv][fv] = weight;
+    }
+    
+    createMST(graph,v,e);
+    
+    return 0;
+}
